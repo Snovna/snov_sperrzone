@@ -200,6 +200,15 @@ AddEventHandler('onClientResourceStart', function(resourceName)
 		Wait(100)
 	end
     playerJob = ESX.GetPlayerData().job.name
+
+    local sperrzonen = json.decode(GlobalState.sperrzonen) or {}
+    for zoneId, zoneInfo in pairs(sperrzonen) do
+        local radiusBlip = AddBlipForRadius(zoneInfo.coords.x, zoneInfo.coords.y, zoneInfo.coords.z, zoneInfo.radius + 0.0)
+        SetBlipColour(radiusBlip, zoneInfo.color)
+        SetBlipAlpha(radiusBlip, 70)
+
+        BLIPS[zoneId] = radiusBlip
+    end
 end)
 
 RegisterCommand('sperrzone', function(source, args, raw)
