@@ -143,7 +143,7 @@ RegisterNetEvent('snov_sperrzone:updated', function(zoneId, zoneInfo)
                 width = '500px'
             }
         })
-        PlaySoundFrontend(-1, 'Event_Message_Purple','GTAO_FM_Events_Soundset')
+        PlaySoundFrontend(-1, 'Event_Start_Text','GTAO_FM_Events_Soundset')
     elseif zoneInfo.color == 5 then
         lib.notify({
             title = 'Gefahrenstelle',
