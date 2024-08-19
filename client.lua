@@ -1,3 +1,4 @@
+ESX = exports['es_extended']:getSharedObject()
 local BLIPS = {}
 function openMenu()
     local sperrzoneOptions = {
