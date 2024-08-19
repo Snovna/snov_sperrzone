@@ -182,9 +182,29 @@ RegisterNetEvent('snov_sperrzone:deleted', function(zoneId)
     end
 end)
 
-RegisterCommand('sperrzone', function(source, args, raw)
-    TriggerEvent('snov_sperrzone:openMenu')
+local playerJob = nil
+
+RegisterNetEvent('esx:setJob', function(job, lastJob)
+    playerJob = job.name
 end)
-RegisterCommand('psf', function(source, args, raw)
-    PlaySoundFrontend(-1, args[1], args[2])
-end, false)
+AddEventHandler('esx:playerLoaded', function()
+    while ESX.GetPlayerData().job == nil do
+		Wait(100)
+	end
+    playerJob = ESX.GetPlayerData().job.name
+end)
+AddEventHandler('onClientResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    while ESX.GetPlayerData().job == nil do
+		Wait(100)
+	end
+    playerJob = ESX.GetPlayerData().job.name
+end)
+
+RegisterCommand('sperrzone', function(source, args, raw)
+    if lib.table.contains(Config.allowedJobs, playerJob) then
+        TriggerEvent('snov_sperrzone:openMenu')
+    else
+        lib.notify({description='Du hast dafür keine Berechtigung!', type='error'})
+    end
+end)
