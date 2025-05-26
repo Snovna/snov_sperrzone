@@ -1,5 +1,42 @@
 ESX = exports['es_extended']:getSharedObject()
 local BLIPS = {}
+
+local playerJob = nil
+
+RegisterNetEvent('esx:setJob', function(job, lastJob)
+    playerJob = job.name
+end)
+AddEventHandler('esx:playerLoaded', function()
+    while ESX.GetPlayerData().job == nil do
+		Wait(100)
+	end
+    playerJob = ESX.GetPlayerData().job.name
+end)
+AddEventHandler('onClientResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    while ESX.GetPlayerData().job == nil do
+		Wait(100)
+	end
+    playerJob = ESX.GetPlayerData().job.name
+
+    local sperrzonen = json.decode(GlobalState.sperrzonen) or {}
+    for zoneId, zoneInfo in pairs(sperrzonen) do
+        local radiusBlip = AddBlipForRadius(zoneInfo.coords.x, zoneInfo.coords.y, zoneInfo.coords.z, zoneInfo.radius + 0.0)
+        SetBlipColour(radiusBlip, zoneInfo.color)
+        SetBlipAlpha(radiusBlip, 70)
+
+        BLIPS[zoneId] = radiusBlip
+    end
+end)
+
+RegisterCommand('sperrzone', function(source, args, raw)
+    if lib.table.contains(Config.allowedJobs, playerJob) then
+        TriggerEvent('snov_sperrzone:openMenu')
+    else
+        lib.notify({description='Du hast dafür keine Berechtigung!', type='error'})
+    end
+end)
+
 function openMenu()
     local sperrzoneOptions = {
         {
@@ -8,11 +45,18 @@ function openMenu()
             onSelect = function()
                 local coords = GetEntityCoords(cache.ped)
                 local street = GetStreetNameFromHashKey(GetStreetNameAtCoord(coords.x, coords.y, coords.z))
-                local input = lib.inputDialog('Sperrzone erstellen', {
+                local options = {
                     {type = 'input', label = 'Titel', description = 'Anzeigename der Sperrzone', required = true, default = street},
                     {type = 'slider', label = 'Radius', min = 50, default = 100, max = 250, required = true},
-                    {type = 'select', label = 'Zonentyp',  required = true, default='1', options = {{value='1',label='Sperrzone (rot)'},{value='5', label='Gefahrenstelle (gelb)'},{value='3', label='Öffentliche Veranstaltung (blau)'}}},
-                })
+                }
+
+                if lib.table.contains(Config.redZoneJobs, playerJob) then
+                    table.insert(options, {type = 'select', label = 'Zonentyp',  required = true, default='1', options = {{value='1',label='Sperrzone (rot)'},{value='5', label='Gefahrenstelle (gelb)'},{value='3', label='Öffentliche Veranstaltung (blau)'}}})
+                else
+                    table.insert(options, {type = 'select', label = 'Zonentyp',  required = true, default='5', options = {{value='1',label='Sperrzone (rot)'},{value='5', label='Gefahrenstelle (gelb)'},{value='3', label='Öffentliche Veranstaltung (blau)'}}})
+                end
+
+                local input = lib.inputDialog('Sperrzone erstellen', options)
                 
                 if not input then return end
                 TriggerServerEvent('snov_sperrzone:create', input, GetEntityCoords(cache.ped))
@@ -76,6 +120,30 @@ function openMenu()
     lib.showContext('snov_sperrzone')
 end
 AddEventHandler('snov_sperrzone:openMenu', openMenu)
+
+if Config.ClearPeds or Config.ClearVehicles then
+    CreateThread(function()
+        while true do
+            if GlobalState.sperrzonen then
+                local sperrzonen = json.decode(GlobalState.sperrzonen)
+                local playerCoords = GetEntityCoords(cache.ped)
+                for zoneId, zoneInfo in pairs(sperrzonen) do
+                    local zoneCoords = vector3(zoneInfo.coords.x, zoneInfo.coords.y, zoneInfo.coords.z)
+                    local dist = #(playerCoords - zoneCoords)
+                    if dist <= (zoneInfo.radius + 50.0) then -- Only clear if player is near the zone (+50 buffer)
+                        if Config.ClearVehicles then
+                            ClearAreaOfVehicles(zoneCoords.x, zoneCoords.y, zoneCoords.z, zoneInfo.radius + 10.0, false, false, false, false, false)
+                        end
+                        if Config.ClearPeds then
+                            ClearAreaOfPeds(zoneCoords.x, zoneCoords.y, zoneCoords.z, zoneInfo.radius + 10.0, false)
+                        end
+                    end
+                end
+            end
+            Wait(5000) -- Check every 5 seconds
+        end
+    end)
+end
 
 RegisterNetEvent('snov_sperrzone:created', function(zoneId)
     while not GlobalState.sperrzonen or json.decode(GlobalState.sperrzonen)[zoneId] == nil do
@@ -180,41 +248,5 @@ RegisterNetEvent('snov_sperrzone:deleted', function(zoneId)
                 width = '500px'
             }
         })
-    end
-end)
-
-local playerJob = nil
-
-RegisterNetEvent('esx:setJob', function(job, lastJob)
-    playerJob = job.name
-end)
-AddEventHandler('esx:playerLoaded', function()
-    while ESX.GetPlayerData().job == nil do
-		Wait(100)
-	end
-    playerJob = ESX.GetPlayerData().job.name
-end)
-AddEventHandler('onClientResourceStart', function(resourceName)
-    if GetCurrentResourceName() ~= resourceName then return end
-    while ESX.GetPlayerData().job == nil do
-		Wait(100)
-	end
-    playerJob = ESX.GetPlayerData().job.name
-
-    local sperrzonen = json.decode(GlobalState.sperrzonen) or {}
-    for zoneId, zoneInfo in pairs(sperrzonen) do
-        local radiusBlip = AddBlipForRadius(zoneInfo.coords.x, zoneInfo.coords.y, zoneInfo.coords.z, zoneInfo.radius + 0.0)
-        SetBlipColour(radiusBlip, zoneInfo.color)
-        SetBlipAlpha(radiusBlip, 70)
-
-        BLIPS[zoneId] = radiusBlip
-    end
-end)
-
-RegisterCommand('sperrzone', function(source, args, raw)
-    if lib.table.contains(Config.allowedJobs, playerJob) then
-        TriggerEvent('snov_sperrzone:openMenu')
-    else
-        lib.notify({description='Du hast dafür keine Berechtigung!', type='error'})
     end
 end)
