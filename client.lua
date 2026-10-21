@@ -26,6 +26,7 @@ AddEventHandler('onClientResourceStart', function(resourceName)
         SetBlipAlpha(radiusBlip, 70)
 
         BLIPS[zoneId] = radiusBlip
+        SperrzoneTraffic.add(zoneId, zoneInfo)
     end
 end)
 
@@ -155,6 +156,7 @@ RegisterNetEvent('snov_sperrzone:created', function(zoneId)
     SetBlipAlpha(radiusBlip, 70)
 
     BLIPS[zoneId] = radiusBlip
+    SperrzoneTraffic.add(zoneId, zoneInfo)
 
     if zoneInfo.color == 1 then
         lib.notify({
@@ -200,6 +202,7 @@ RegisterNetEvent('snov_sperrzone:updated', function(zoneId, zoneInfo)
     SetBlipAlpha(radiusBlip, 70)
 
     BLIPS[zoneId] = radiusBlip
+    SperrzoneTraffic.update(zoneId, zoneInfo)
 
     if zoneInfo.color == 1 then
         lib.notify({
@@ -237,6 +240,7 @@ RegisterNetEvent('snov_sperrzone:updated', function(zoneId, zoneInfo)
 end)
 
 RegisterNetEvent('snov_sperrzone:deleted', function(zoneId)
+    SperrzoneTraffic.remove(zoneId)
     if BLIPS[zoneId] then
         RemoveBlip(BLIPS[zoneId])
         lib.notify({

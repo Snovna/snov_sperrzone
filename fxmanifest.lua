@@ -1,11 +1,12 @@
 fx_version 'cerulean'
 games { 'gta5' }
 
-version '1.1'
+version '1.2'
 author 'Snov'
 lua54 'yes'
 
 client_scripts {
+    'client_traffic.lua',
     'client.lua',
 }
 
